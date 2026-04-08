@@ -128,8 +128,54 @@ body {
   box-shadow: 0 0 15px rgba(0, 242, 255, 0.4);
 }
 
-@media (max-width: 1200px) {
-  .pool-container {
-    flex-direction: column;
-  }
+.adjust-btn-mini {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 0 4px;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.adjust-btn-mini:hover {
+  color: white;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.btn-icon:hover {
+  background: var(--surface-hover);
+  color: white;
+}
+
+nav .btn {
+  font-size: 0.9rem;
+  padding: 8px 20px;
+}
+
+.adjust-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.adjust-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
 }
