@@ -157,9 +157,29 @@ body {
   color: white;
 }
 
-nav .btn {
-  font-size: 0.9rem;
-  padding: 8px 20px;
+.input-full {
+  padding: 10px;
+  width: 100%;
+  border: none;
+  color: white;
+  margin-top: 4px;
+}
+
+.label-mini {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  display: block;
+}
+
+.selected-glow {
+  box-shadow: 0 0 20px rgba(0, 242, 255, 0.4);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 10px rgba(126, 91, 239, 0.3); }
+  50% { box-shadow: 0 0 25px rgba(126, 91, 239, 0.6); }
+  100% { box-shadow: 0 0 10px rgba(126, 91, 239, 0.3); }
 }
 
 .adjust-btn {

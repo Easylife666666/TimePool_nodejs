@@ -7,12 +7,12 @@ export const usePoolManager = () => {
     const saved = localStorage.getItem('time-pools');
     if (saved) {
       const parsed = JSON.parse(saved);
-      // Ensure templates exist in migration
-      if (!parsed.templates) {
-        parsed.templates = [
-          { name: '睡觉', duration: 8, type: 'sleep', priority: 1, note: '每日保障' },
-          { name: '用餐', duration: 2, type: 'other', priority: 2, note: '早午晚餐' },
-          { name: '专注工作', duration: 4, type: 'work', priority: 1, note: '核心输出' }
+      // Data migration for dynamic types
+      if (!parsed.types) {
+        parsed.types = [
+          { id: 'work', name: '工作', color: '#7e5bef' },
+          { id: 'sleep', name: '睡觉', color: '#00f2ff' },
+          { id: 'other', name: '其他', color: '#ffcc00' }
         ];
       }
       return parsed;
@@ -23,6 +23,11 @@ export const usePoolManager = () => {
         { name: '睡觉', duration: 8, type: 'sleep', priority: 1, note: '每日保障' },
         { name: '用餐', duration: 2, type: 'other', priority: 2, note: '早午晚餐' },
         { name: '专注工作', duration: 4, type: 'work', priority: 1, note: '核心输出' }
+      ],
+      types: [
+        { id: 'work', name: '工作', color: '#7e5bef' },
+        { id: 'sleep', name: '睡觉', color: '#00f2ff' },
+        { id: 'other', name: '其他', color: '#ffcc00' }
       ]
     };
   });
@@ -37,7 +42,6 @@ export const usePoolManager = () => {
 
   const weekRange = useMemo(() => getWeekRange(), []);
 
-  // Auto-populate logic using the stored templates
   useEffect(() => {
     let changed = false;
     const newDaily = { ...pools.daily };
@@ -83,7 +87,10 @@ export const usePoolManager = () => {
   };
 
   const getWeeklyStats = () => {
-    const stats = { work: 0, sleep: 0, other: 0, totalUsed: 0, totalPassed: 0, totalRemaining: 0 };
+    const stats = { totalUsed: 0, totalPassed: 0, totalRemaining: 0 };
+    // Initialize stats for each dynamic type
+    pools.types.forEach(t => { stats[t.id] = 0; });
+
     const todayStr = format(new Date(), 'yyyy-MM-dd');
     weekRange.forEach(dateStr => {
       const dayBlocks = pools.daily[dateStr] || [];
@@ -92,7 +99,14 @@ export const usePoolManager = () => {
       let dayUsed = 0;
       dayBlocks.forEach(b => {
         const effective = Math.max(0, Number(b.duration) - Number(b.completedTime || 0));
-        stats[b.type] = (stats[b.type] || 0) + effective;
+        // Only count if type exists in stats (dynamic types)
+        if (stats[b.type] !== undefined) {
+          stats[b.type] += effective;
+        } else {
+          // Fallback to "other" if type is deleted but block remains
+          const otherId = pools.types[pools.types.length - 1]?.id || 'other';
+          stats[otherId] = (stats[otherId] || 0) + effective;
+        }
         dayUsed += effective;
       });
       stats.totalUsed += dayUsed;
@@ -165,6 +179,25 @@ export const usePoolManager = () => {
     setPools(prev => ({ ...prev, templates: prev.templates.filter((_, i) => i !== index) }));
   };
 
+  // Dynamic Type Management
+  const addType = (type) => {
+    setPools(prev => ({ ...prev, types: [...prev.types, { ...type, id: uuidv4() }] }));
+  };
+
+  const updateType = (id, newData) => {
+    setPools(prev => ({
+      ...prev,
+      types: prev.types.map(t => t.id === id ? { ...t, ...newData } : t)
+    }));
+  };
+
+  const removeType = (id) => {
+    setPools(prev => ({
+      ...prev,
+      types: prev.types.filter(t => t.id !== id)
+    }));
+  };
+
   return {
     pools,
     addBlock,
@@ -177,6 +210,9 @@ export const usePoolManager = () => {
     getWeeklyStats,
     updateTemplate,
     addTemplate,
-    removeTemplate
+    removeTemplate,
+    addType,
+    updateType,
+    removeType
   };
 };

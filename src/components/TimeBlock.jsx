@@ -2,9 +2,13 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Trash2, CheckCircle2, ChevronUp, ChevronDown, Check, RotateCcw, Clock } from 'lucide-react';
 
-const TimeBlock = ({ block, selected, onSelect, onRemove, onUpdate, onDragStart }) => {
+const TimeBlock = ({ block, selected, onSelect, onRemove, onUpdate, onDragStart, types = [] }) => {
   const effective = Math.max(0, parseFloat((block.duration - (block.completedTime || 0)).toFixed(1)));
   const progressPct = ( (block.completedTime || 0) / block.duration ) * 100;
+
+  // Find the color for this block's type
+  const typeInfo = types.find(t => t.id === block.type) || { color: 'var(--primary)', name: block.type };
+  const blockColor = typeInfo.color;
 
   const adjustCompleted = (delta) => {
     const newVal = Math.max(0, Math.min(block.duration, (block.completedTime || 0) + delta));
@@ -27,18 +31,18 @@ const TimeBlock = ({ block, selected, onSelect, onRemove, onUpdate, onDragStart 
         opacity: 1, 
         scale: 1,
         borderColor: selected ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-        boxShadow: selected ? '0 0 15px rgba(0, 242, 255, 0.2)' : 'none'
+        boxShadow: selected ? `0 0 15px ${blockColor}33` : 'none'
       }}
-      className={`time-block glass ${block.type} ${selected ? 'selected' : ''}`}
+      className={`time-block glass ${selected ? 'selected' : ''}`}
       draggable
       onDragStart={(e) => onDragStart(e, block.id)}
       style={{ 
         position: 'relative',
         borderWidth: '1px',
-        borderStyle: 'solid'
+        borderStyle: 'solid',
+        borderLeft: `4px solid ${blockColor}`
       }}
       onClick={(e) => {
-        // Toggle selection on click if clicking the background or checkbox area
         if (e.target.closest('button')) return;
         onSelect();
       }}
@@ -47,7 +51,7 @@ const TimeBlock = ({ block, selected, onSelect, onRemove, onUpdate, onDragStart 
         position: 'absolute', bottom: 0, left: 0, height: '4px', background: 'rgba(255,255,255,0.05)', width: '100%', pointerEvents: 'none', zIndex: 0
       }}>
         <div style={{
-          height: '100%', width: `${progressPct}%`, background: 'var(--primary)', opacity: 0.4, transition: 'width 0.3s'
+          height: '100%', width: `${progressPct}%`, background: blockColor, opacity: 0.4, transition: 'width 0.3s'
         }} />
       </div>
 
@@ -59,14 +63,14 @@ const TimeBlock = ({ block, selected, onSelect, onRemove, onUpdate, onDragStart 
             onChange={onSelect} 
             onClick={(e) => e.stopPropagation()}
             style={{ 
-              accentColor: 'var(--primary)', 
+              accentColor: blockColor, 
               width: '14px', 
               height: '14px',
               cursor: 'pointer'
             }} 
           />
           <div className="block-name" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}>
-            {progressPct >= 100 && <CheckCircle2 size={14} color="var(--primary)" />}
+            {progressPct >= 100 && <CheckCircle2 size={14} color={blockColor} />}
             {block.name}
           </div>
         </div>
@@ -89,7 +93,7 @@ const TimeBlock = ({ block, selected, onSelect, onRemove, onUpdate, onDragStart 
               <button className="adjust-btn-mini" onClick={(e) => { e.stopPropagation(); adjustDuration(0.5); }}>+</button>
             </div>
           </div>
-          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--primary)' }}>剩余 {effective}h</span>
+          <span style={{ fontSize: '0.75rem', fontWeight: 700, color: blockColor }}>剩余 {effective}h</span>
         </div>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>

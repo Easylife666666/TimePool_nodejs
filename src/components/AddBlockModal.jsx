@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 
 const AddBlockModal = (props) => {
-  const { isOpen, onClose, onAdd, DEFAULT_TEMPLATES } = props;
+  const { isOpen, onClose, onAdd, DEFAULT_TEMPLATES, TYPES = [] } = props;
   const [formData, setFormData] = useState({
     name: '',
     duration: '',
     completedTime: '0',
-    type: 'work',
+    type: TYPES[0]?.id || 'work',
     priority: '3',
     note: ''
   });
@@ -33,7 +33,7 @@ const AddBlockModal = (props) => {
       completedTime: parseFloat(formData.completedTime) || 0,
       priority: parseInt(formData.priority) || 3
     });
-    setFormData({ name: '', duration: '', completedTime: '0', type: 'work', priority: '3', note: '' });
+    setFormData({ name: '', duration: '', completedTime: '0', type: TYPES[0]?.id || 'work', priority: '3', note: '' });
     onClose();
   };
 
@@ -94,16 +94,19 @@ const AddBlockModal = (props) => {
               />
             </div>
           </div>
-          <select 
-            className="glass" 
-            style={{ padding: '12px', border: 'none', color: 'white', background: 'var(--surface)' }}
-            value={formData.type}
-            onChange={e => setFormData({...formData, type: e.target.value})}
-          >
-            <option value="work">工作 (Work)</option>
-            <option value="sleep">睡觉 (Sleep)</option>
-            <option value="other">其他 (Other)</option>
-          </select>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+            <label style={{ fontSize: '0.7rem', color: 'var(--text-dim)', marginLeft: '4px' }}>分类 (Type)</label>
+            <select 
+              className="glass" 
+              style={{ padding: '12px', border: 'none', color: 'white', background: 'var(--surface)' }}
+              value={formData.type}
+              onChange={e => setFormData({...formData, type: e.target.value})}
+            >
+              {TYPES.map(t => (
+                <option key={t.id} value={t.id}>{t.name}</option>
+              ))}
+            </select>
+          </div>
           <div style={{ display: 'flex', gap: '12px' }}>
             <button type="button" onClick={onClose} className="btn" style={{ flex: 1, background: 'rgba(255,255,255,0.1)', color: 'white' }}>取消</button>
             <button type="submit" className="btn btn-primary" style={{ flex: 2 }}>添加</button>
