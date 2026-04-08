@@ -88,7 +88,6 @@ export const usePoolManager = () => {
 
   const getWeeklyStats = () => {
     const stats = { totalUsed: 0, totalPassed: 0, totalRemaining: 0 };
-    // Initialize stats for each dynamic type
     pools.types.forEach(t => { stats[t.id] = 0; });
 
     const todayStr = format(new Date(), 'yyyy-MM-dd');
@@ -99,11 +98,9 @@ export const usePoolManager = () => {
       let dayUsed = 0;
       dayBlocks.forEach(b => {
         const effective = Math.max(0, Number(b.duration) - Number(b.completedTime || 0));
-        // Only count if type exists in stats (dynamic types)
         if (stats[b.type] !== undefined) {
           stats[b.type] += effective;
         } else {
-          // Fallback to "other" if type is deleted but block remains
           const otherId = pools.types[pools.types.length - 1]?.id || 'other';
           stats[otherId] = (stats[otherId] || 0) + effective;
         }
@@ -121,6 +118,17 @@ export const usePoolManager = () => {
       ...prev,
       daily: { ...prev.daily, [dateStr]: [...(prev.daily[dateStr] || []), newBlock] }
     }));
+  };
+
+  const bulkAddBlocks = (items) => {
+    setPools(prev => {
+      const newDaily = { ...prev.daily };
+      items.forEach(({ dateStr, blockData }) => {
+        const newBlock = { id: uuidv4(), completedTime: 0, ...blockData, createdAt: new Date().toISOString() };
+        newDaily[dateStr] = [...(newDaily[dateStr] || []), newBlock];
+      });
+      return { ...prev, daily: newDaily };
+    });
   };
 
   const updateBlock = (dateStr, blockId, newData) => {
@@ -163,7 +171,6 @@ export const usePoolManager = () => {
     });
   };
 
-  // Template Management
   const updateTemplate = (index, newData) => {
     setPools(prev => ({
       ...prev,
@@ -179,7 +186,6 @@ export const usePoolManager = () => {
     setPools(prev => ({ ...prev, templates: prev.templates.filter((_, i) => i !== index) }));
   };
 
-  // Dynamic Type Management
   const addType = (type) => {
     setPools(prev => ({ ...prev, types: [...prev.types, { ...type, id: uuidv4() }] }));
   };
@@ -201,6 +207,7 @@ export const usePoolManager = () => {
   return {
     pools,
     addBlock,
+    bulkAddBlocks,
     updateBlock,
     removeBlock,
     bulkRemoveBlocks,

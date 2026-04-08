@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, BarChart2, Settings, Home, Trash2, CheckCircle2, CheckSquare, Square, Activity, LayoutGrid, Tag, Palette } from 'lucide-react';
+import { Plus, BarChart2, Settings, Home, Trash2, CheckCircle2, CheckSquare, Square, XCircle, Activity, LayoutGrid, Tag, Palette } from 'lucide-react';
 import { usePoolManager } from './hooks/usePoolManager';
 import TimeBlock from './components/TimeBlock';
 import AddBlockModal from './components/AddBlockModal';
@@ -8,7 +8,7 @@ import './index.css';
 
 function App() {
   const { 
-    pools, addBlock, updateBlock, removeBlock, bulkRemoveBlocks, moveBlock, 
+    pools, addBlock, bulkAddBlocks, updateBlock, removeBlock, bulkRemoveBlocks, moveBlock, 
     getWeekRange, getPoolStats, getWeeklyStats, 
     updateTemplate, addTemplate, removeTemplate,
     addType, updateType, removeType
@@ -54,11 +54,11 @@ function App() {
   const selectAllOnDay = (dateStr) => {
     const dayBlocks = pools.daily[dateStr] || [];
     const blockIdsOnDay = dayBlocks.map(b => b.id);
-    const alreadySelectedOnDay = selectedItems.filter(item => item.dateStr === dateStr).map(item => item.blockId);
-    if (alreadySelectedOnDay.length === blockIdsOnDay.length) {
+    const selectedOnDay = selectedItems.filter(item => item.dateStr === dateStr).map(item => item.blockId);
+    if (selectedOnDay.length === blockIdsOnDay.length) {
       setSelectedItems(prev => prev.filter(item => item.dateStr !== dateStr));
     } else {
-      const toAdd = dayBlocks.filter(b => !alreadySelectedOnDay.includes(b.id)).map(b => ({ dateStr, blockId: b.id }));
+      const toAdd = dayBlocks.filter(b => !selectedOnDay.includes(b.id)).map(b => ({ dateStr, blockId: b.id }));
       setSelectedItems(prev => [...prev, ...toAdd]);
     }
   };
@@ -74,17 +74,27 @@ function App() {
   const clearSelection = () => setSelectedItems([]);
 
   const applyTemplatesToDay = (dateStr) => {
-    pools.templates.forEach(tpl => addBlock('daily', dateStr, tpl));
+    const items = pools.templates.map(tpl => ({ dateStr, blockData: tpl }));
+    bulkAddBlocks(items);
   };
 
   const applyTemplatesToWeek = () => {
     if (window.confirm('确认将模板应用到本周所有日期吗？')) {
-      weekRange.forEach(dateStr => applyTemplatesToDay(dateStr));
+      const items = [];
+      weekRange.forEach(dateStr => {
+        pools.templates.forEach(tpl => {
+          items.push({ dateStr, blockData: tpl });
+        });
+      });
+      bulkAddBlocks(items);
     }
   };
 
-  const handleBulkDelete = () => {
-    if (window.confirm(`确认删除选中的 ${selectedItems.length} 个任务吗？`)) {
+  const handleBulkDelete = (e) => {
+    if (e) e.stopPropagation();
+    if (selectedItems.length === 0) return;
+    const confirmMsg = `确认删除选中的 ${selectedItems.length} 个任务吗？`;
+    if (window.confirm(confirmMsg)) {
       bulkRemoveBlocks(selectedItems);
       setSelectedItems([]);
     }
@@ -118,7 +128,6 @@ function App() {
       <AnimatePresence mode="wait">
         {activeTab === 'dashboard' && (
           <motion.main key="dashboard" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="pool-container">
-            {/* Weekly Summary Sidebar */}
             <aside className="pool glass" style={{ maxWidth: '320px', height: 'fit-content', position: 'sticky', top: '80px' }}>
               <div className="pool-header">
                 <div>
@@ -127,23 +136,23 @@ function App() {
                   </h2>
                 </div>
                 <div style={{ display: 'flex', gap: '4px' }}>
-                  <button className="btn-icon" onClick={applyTemplatesToWeek} title="全周应用模板"><LayoutGrid size={16} /></button>
-                  <button className="btn-icon" onClick={selectAllWeek} title="全选本周"><CheckSquare size={16} /></button>
+                  <button className="btn-icon" onClick={(e) => { e.stopPropagation(); applyTemplatesToWeek(); }} title="全周应用模板"><LayoutGrid size={16} /></button>
+                  <button className="btn-icon" onClick={(e) => { e.stopPropagation(); selectAllWeek(); }} title="全选本周"><CheckSquare size={16} /></button>
                 </div>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '10px' }}>
                 <div className="glass" style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                    <span>已规划时长</span>
+                    <span>规划总量</span>
                     <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{weeklyStats.totalUsed.toFixed(1)}h</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
-                    <span>全周余额</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '8px' }}>
+                    <span>本周剩余</span>
                     <span style={{ color: '#00ff88', fontWeight: 700 }}>{weeklyStats.totalRemaining.toFixed(1)}h</span>
                   </div>
                   
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '12px' }}>
+                  <div style={{ paddingTop: '12px' }}>
                     {pools.types.map(t => {
                       const hours = weeklyStats[t.id] || 0;
                       const pct = weeklyStats.totalUsed ? (hours / weeklyStats.totalUsed) * 100 : 0;
@@ -174,33 +183,44 @@ function App() {
               </div>
             </aside>
 
-            {/* Daily Pools */}
             <div style={{ flex: 3, display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '20px' }}>
               {weekRange.map((dateStr, idx) => {
                 const isToday = idx === 0;
                 const items = pools.daily[dateStr] || [];
                 const stats = getPoolStats(dateStr);
-                const isAllSelected = items.length > 0 && items.every(b => selectedItems.some(item => item.blockId === b.id));
+                const isAllOnDay = items.length > 0 && items.every(b => selectedItems.some(item => item.blockId === b.id));
                 return (
-                  <section key={dateStr} className={`pool glass ${isToday ? 'today' : ''}`} style={{ border: isToday ? '1px solid var(--primary)' : '' }} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, dateStr)}>
+                  <section key={dateStr} className={`pool glass ${isToday ? 'today' : ''}`} onDragOver={(e) => e.preventDefault()} onDrop={(e) => handleDrop(e, dateStr)}>
                     <div className="pool-header">
                       <div>
                         <h3 className="pool-title" style={{ fontSize: '0.95rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
                           {isToday ? '今天' : dateStr.split('-').slice(1).join('/')}
                           {items.length > 0 && (
-                            <button onClick={() => selectAllOnDay(dateStr)} style={{ background: 'none', border: 'none', color: isAllSelected ? 'var(--primary)' : 'var(--text-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
-                              {isAllSelected ? <CheckSquare size={13} /> : <Square size={13} />}
+                            <button onClick={(e) => { e.stopPropagation(); selectAllOnDay(dateStr); }} style={{ background: 'none', border: 'none', color: isAllOnDay ? 'var(--primary)' : 'var(--text-dim)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
+                              {isAllOnDay ? <CheckSquare size={13} /> : <Square size={13} />}
                             </button>
                           )}
                         </h3>
                         <div className="pool-stats">可用: {stats.remaining.toFixed(1)}h | 占用: {stats.used.toFixed(1)}h</div>
                       </div>
                       <div style={{ display: 'flex', gap: '4px' }}>
-                        <button className="btn-icon" onClick={() => applyTemplatesToDay(dateStr)} title="填入模板"><Activity size={16} /></button>
+                        <button className="btn-icon" onClick={(e) => { e.stopPropagation(); applyTemplatesToDay(dateStr); }} title="填入模板"><Activity size={16} /></button>
                         <button className="btn-icon" onClick={() => openAddModal(dateStr)} title="添加块"><Plus size={16} /></button>
                       </div>
                     </div>
-                    {/* Progress Bar Rendering ... same as before but prettier */}
+                    
+                    <div style={{ height: '8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px', overflow: 'hidden', display: 'flex' }}>
+                      {stats.passed > 0 && (
+                        <div style={{ height: '100%', width: `${(stats.passed / 24) * 100}%`, background: 'rgba(255,255,255,0.1)' }} />
+                      )}
+                      {stats.used > 0 && (
+                        <motion.div 
+                          animate={{ width: `${(stats.used / 24) * 100}%` }}
+                          style={{ height: '100%', background: 'var(--primary)', boxShadow: '0 0 10px var(--primary)' }}
+                        />
+                      )}
+                    </div>
+
                     <div className="block-list" style={{ marginTop: '16px' }}>
                       <AnimatePresence>
                         {items.map(block => (
@@ -260,9 +280,6 @@ function App() {
                     <button className="btn-icon" onClick={() => removeType(type.id)} style={{ color: '#ff3e3e', marginTop: '14px' }}><Trash2 size={18} /></button>
                   </div>
                 ))}
-              </div>
-              <div className="glass" style={{ marginTop: '32px', padding: '16px', fontSize: '0.85rem', color: 'var(--text-dim)', lineBreak: 'anywhere' }}>
-                💡 修改分类词条会立即影响 Dashboard 的颜色显示。如果删除某个分类，原本属于该分类的块将回退到默认颜色。
               </div>
             </div>
           </motion.main>
