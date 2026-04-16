@@ -1,5 +1,5 @@
 # 🕒 TIME POOL - Dynamic Time Management System
-## Vibe coding by antigravity with gemini-3-flash.
+## Vibe coding by antigravity with gemini-3-flash. Bug maybe exists.
 A high-efficiency time management tool built with **React + Vite**. It features a rolling "8-day window" and "dynamic occupancy" logic to help you visualize and control every minute of your life.
 
 ---
@@ -25,6 +25,7 @@ A high-efficiency time management tool built with **React + Vite**. It features 
 
 ### 1. Prerequisites
 Ensure you have [Node.js](https://nodejs.org/) installed.
+I use nvm to install node 24 and etc.
 
 ### 2. Initialization & Execution
 Run the following in your terminal:
