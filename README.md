@@ -2,6 +2,9 @@
 ## Vibe coding by antigravity with gemini-3-flash. Bug maybe exists.
 A high-efficiency time management tool built with **React + Vite**. It features a rolling "8-day window" and "dynamic occupancy" logic to help you visualize and control every minute of your life.
 
+> [!NOTE]
+> Permanently Discontinued
+
 ---
 
 ## 🌟 Key Features
